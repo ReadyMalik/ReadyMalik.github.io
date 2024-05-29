@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Tambahkan CSS Bootstrap di sini -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM"
+    crossorigin="anonymous"
+  />
+  <!-- Tambahkan Font Awesome CSS di sini -->
+  <link
+    rel="stylesheet"
+    href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css"
+    crossorigin="anonymous"
+  />
+  <style>
+    @import url(https://fonts.googleapis.com/earlyaccess/amiri.css);
+    .amiri {
+      font-family: 'Amiri', serif;
+      font-size: 2rem; /* Perbesar ukuran font Arab di sini */
+    }
+
+    .card-arabic {
+      direction: rtl; /* Mengatur arah teks Arab menjadi kanan-ke-kiri */
+      position: relative;
+    }
+
+    .ayah-text {
+      flex: 1;
+      display: flex;
+      flex-direction: row; /* Menambahkan arah sumbu utama flex-box menjadi horizontal */
+      align-items: center;
+      justify-content: flex-end; /* Mengatur teks Arab berada di sebelah kanan card */
+    }
+
+    .card-controls {
+      background-color: transparent;
+      display: flex;
+      justify-content: space-between; /* Mengatur posisi tombol ke kanan */
+      align-items: center;
+    }
+
+    .play-btn {
+      flex-shrink: 0;
+      margin-bottom: 10px;
+    }
+
+    .start-from-right h5 {
+      text-align: right;
+      direction: rtl;
+    }
+
+    .navbar {
+      background-color: #021024;
+    }
+
+    .navbar-brand {
+      color: white;
+    }
+    
+    .dropdown-menu-scroll {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .flex-container {
+  display: flex; /* Mengatur tombol sejajar dan di ujung yang berlawanan */
+  align-items: center; /* Mengatur tombol agar berada di tengah vertikal */
+}
+
+
+
+    .ayah-container {
+      display: flex;
+      align-items: flex-start;
+    }
+
+    .ayah-controls {
+      margin-left: 10px;
+    }
+
+    .ayah-number {
+      font-size: 1.5rem;
+      text-align: right; /* Posisikan nomor ayat ke kanan */
+    }
+
+    .ayah-translation {
+      text-align: right; /* Posisikan teks terjemahan ke kanan */
+    }
+    
+    .ayah-latin {
+      text-align: right; /* Posisikan teks latin ke kanan */
+    }
+
+    .text-center {
+      color: white;
+    }
+
+    .active-surah {
+      background-color: #021024;
+      color: white;
+    }
+
+    body {
+      background-image: url('https://u-static.fotor.com/images/text-to-image/result/PRO-b7ac6edc41504e86abe41bb230af8a27.jpg'); /* Set background image */
+      background-size: cover; /* Make sure the image covers the whole background */
+      background-position: center; /* Center the background image */
+      background-repeat: no-repeat; /* Do not repeat the image */
+      background-attachment: fixed; /* Fix the background image */
+      color: black; /* Set text color to white for better readability against the dark background */
+    }
+
+    header, footer, main {
+      background-color: rgba(0, 0, 0, 0.7); 
+    }
+  </style>
+</head>
+<body>
+  <header class="navbar">
+    <div class="container">
+      <span class="navbar-brand mb-0 h1"><img src="assets\img\islamic-book.png" alt="Logo" width="50" height="50"> Web Qur'an</span>
+      <input type="text" class="form-control mb-3" id="search-surah" placeholder="Cari nama surah...">
+    </div>
+  </header>
+  <main id="maincontent" class="content">
+    <div class="container-fluid p-2">
+      <div class="row">
+        <div class="col-4">
+          <div class="list-group shadow p-3 mb-5 bg-body-tertiary rounded" id="daftar-surah"></div>
+        </div>
+        <div class="col-8">
+          <div class="shadow p-3 mb-5 bg-body-tertiary rounded" id="text-arabic">
+            Klik daftar surah disamping untuk melihat surah...
+          </div> 
+        </div>
+      </div>
+    </div>
+  </main>
+  <footer class="text-center">Copyright &copy; 2024</footer>
+
+  <!-- Tambahkan script JavaScript di sini -->
+  <script>
+    const BASE_URL = "https://equran.id/api/v2";
+    
+    const quranSurah = async () => {
+      const endpoint = `${BASE_URL}/surat`;
+      const response = await fetch(endpoint);
+      const data = await response.json();
+      return data.data;
+    };
+
+    const quranDetail = async (nomor) => {
+      const endpoint = `${BASE_URL}/surat/${nomor}`;
+      const response = await fetch(endpoint);
+      const data = await response.json();
+      return data.data;
+    };
+
+    quranSurah().then((surat) => {
+      surat.forEach((surah) => {
+        const list = `<a href="#" class="list-group-item list-group-item-action" id="surah-${surah.nomor}">
+                        ${surah.nomor} - ${surah.namaLatin} (${surah.nama})
+                      </a>`;
+        document.querySelector("#daftar-surah").insertAdjacentHTML("beforeend", list);
+
+        document.querySelector(`#surah-${surah.nomor}`).addEventListener("click", function (event) {
+          event.preventDefault();
+          renderAyat(surah.nomor);
+          highlightSurah(surah.nomor);
+        });
+      });
+    });
+
+    const renderAyat = (nomorSurah) => {
+      const textArabic = document.querySelector("#text-arabic");
+      textArabic.innerHTML = "";
+
+      const playAllBtn = `<button class="btn btn-primary play-all-btn" style="margin-right: 10px;" id="play-all-${nomorSurah}"> <!-- Menambahkan inline style untuk margin sebelah kanan -->
+                            <i class="fa fa-play"></i> Play All
+                          </button>`;
+
+
+      const dropdownMenu = `<div class="dropdown">
+                              <button class="btn btn-secondary dropdown-toggle ml-10" type="button" id="dropdownMenuButton-${nomorSurah}" data-bs-toggle="dropdown" aria-expanded="false">
+                                Pilih Ayat
+                              </button>
+                              <ul class="dropdown-menu dropdown-menu-scroll" aria-labelledby="dropdownMenuButton-${nomorSurah}" id="dropdown-menu-${nomorSurah}">
+                              </ul>
+                            </div>`;
+        const controlsContainer = `
+          <div class="flex-container">
+            <div>
+              ${playAllBtn}
+            </div>
+            <div>
+              ${dropdownMenu}
+            </div>
+          </div>
+        `;
+        textArabic.insertAdjacentHTML("beforeend", controlsContainer);
+
+
+      quranDetail(nomorSurah).then((ayat) => {
+        const audioUrls = [];
+        ayat.ayat.forEach((ayah) => {
+          audioUrls.push(ayah.audio['01']);
+          const ayatCard = `<div class="ayah-container mt-4" id="ayat-${ayah.nomorAyat}">
+                              <div class="card ayah-text active">
+                                <div class="card-body">
+                                  <h5 class="card-title amiri card-arabic" title="${ayah.teksIndonesia}">
+                                    ${ayah.teksArab}
+                                  </h5>
+                                  <p class="card-text terjemahan ayah-latin">
+                                    ${ayah.teksLatin}
+                                  </p>
+                                </div>
+                              </div>
+                              <div class="card ayah-controls">
+                                <div class="card-body card-controls">
+                                  <div class="ayah-number">${ayah.nomorAyat}</div>
+                                  <p class="card-text text-center play-btn">
+                                    <button class="btn btn-link play-single-btn" data-audio="${ayah.audio['01']}">
+                                      <i class="fa fa-play-circle fa-2x"></i>
+                                    </button>
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                            <div class="card mt-2 card-translation active">
+                              <div class="card-body">
+                                <p class="card-text text-start terjemahan">
+                                  ${ayah.teksIndonesia}
+                                </p>
+                              </div>
+                            </div>`;
+          textArabic.insertAdjacentHTML("beforeend", ayatCard);
+
+          const dropdownItem = `<li><a class="dropdown-item" href="#ayat-${ayah.nomorAyat}" data-index="${ayah.nomorAyat - 1}">Ayat ${ayah.nomorAyat}</a></li>`;
+          document.querySelector(`#dropdown-menu-${nomorSurah}`).insertAdjacentHTML("beforeend", dropdownItem);
+        });
+
+        document.querySelectorAll(`#dropdown-menu-${nomorSurah} .dropdown-item`).forEach((item, index) => {
+          item.addEventListener("click", (event) => {
+            event.preventDefault();
+            const ayahTexts = document.querySelectorAll(".ayah-text");
+            const cardTranslations = document.querySelectorAll(".card-translation");
+            ayahTexts.forEach(ayahText => ayahText.classList.remove("active"));
+            cardTranslations.forEach(cardTranslation => cardTranslation.classList.remove("active"));
+
+            const targetAyatContainer = document.querySelector(`#ayat-${index + 1}`);
+            if (targetAyatContainer) {
+              const targetAyatCards = targetAyatContainer.querySelectorAll(".ayah-text, .card-translation");
+              targetAyatCards.forEach(card => card.classList.add("active"));
+              targetAyatContainer.scrollIntoView({ behavior: 'smooth' });
+            }
+          });
+        });
+
+        document.querySelector(`#play-all-${nomorSurah}`).addEventListener("click", () => {
+          playAllAyahs(audioUrls, 450);
+        });
+
+        document.querySelectorAll(".play-single-btn").forEach(button => {
+          button.addEventListener("click", () => {
+            const audioSrc = button.getAttribute("data-audio");
+            const audio = new Audio(audioSrc);
+            audio.play();
+          });
+        });
+      });
+    };
+
+    const highlightSurah = (nomorSurah) => {
+      const surahListItems = document.querySelectorAll(".list-group-item");
+      surahListItems.forEach(item => item.classList.remove("active-surah"));
+      document.querySelector(`#surah-${nomorSurah}`).classList.add("active-surah");
+    };
+
+    let isPlaying = false;
+
+    const playAllAyahs = (urls, delay) => {
+      let currentIndex = 0;
+      const audio = new Audio(urls[currentIndex]);
+      audio.play();
+
+      audio.addEventListener("ended", () => {
+        currentIndex++;
+        if (currentIndex < urls.length) {
+          setTimeout(() => {
+            if (isPlaying) {
+              audio.src = urls[currentIndex];
+              audio.play();
+            }
+          }, delay);
+        }
+      });
+
+      isPlaying = true;
+    };
+
+    document.querySelector("#search-surah").addEventListener("input", function () {
+      const searchValue = this.value.toLowerCase();
+      const surahList = document.querySelectorAll(".list-group-item");
+
+      surahList.forEach((surah) => {
+        const surahName = surah.textContent.toLowerCase();
+        if (surahName.includes(searchValue)) {
+          surah.style.display = "block";
+        } else {
+          surah.style.display = "none";
+        }
+      });
+    });
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+</body>
+</html>
